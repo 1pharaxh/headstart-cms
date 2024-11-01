@@ -1,0 +1,51 @@
+version: "3.8"
+
+name: headstart
+
+services:
+  # NextJS app
+  app:
+    image: node:20.11.1-alpine3.19
+    container_name: nextjs-app
+    ports:
+      - "3000:3000"
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - path: ./.env
+        required: true
+      - path: ./.env.local
+        required: false
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install  --legacy-peer-deps && npx drizzle-kit migrate && npx drizzle-kit generate && npx drizzle-kit push && npm run dev",
+      ]
+    depends_on:
+      - db
+    networks:
+      - headstart-network
+
+  # Postgres database
+  db:
+    container_name: postgres-db
+    image: postgres:13
+    environment:
+      POSTGRES_USER: headstart
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: headstart
+    ports:
+      - "5432:5432"
+    volumes:
+      - headstart-db-data:/var/lib/postgresql/data
+    networks:
+      - headstart-network
+
+volumes:
+  headstart-db-data:
+
+networks:
+  headstart-network:
+    driver: bridge
